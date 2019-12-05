@@ -1,6 +1,10 @@
 package be.kdg.chat;
 
+import be.kdg.chat.client.ChatClientImplementation;
+import be.kdg.chat.client.ChatClientSkeleton;
+import be.kdg.chat.client.IChatClient;
 import be.kdg.chat.communication.NetworkAddress;
+import be.kdg.chat.server.ChatServerStub;
 
 import java.util.Scanner;
 
@@ -13,38 +17,35 @@ public class Start {
             System.exit(1);
         }
 
-        // create address object
+        // create server connection address
         int port = Integer.parseInt(args[1]);
-        NetworkAddress address = new NetworkAddress(args[0], port);
+        NetworkAddress serverAddress = new NetworkAddress(args[0], port);
 
-        Scanner scanner = new Scanner(System.in);
+        // create server stub
+        ChatServerStub chatServerStub = new ChatServerStub(serverAddress);
 
-        // ask chat client name
-        System.out.print("Username: ");
-        String name = scanner.nextLine();
+        // create client skeleton for listening to incoming requests
+        ChatClientSkeleton chatClientSkeleton = new ChatClientSkeleton();
 
-        // check if name isn't empty
-        if (name.isEmpty()) {
-            System.err.println("Please enter a valid name.");
-            System.exit(1);
-        }
+        // create chat client
+        ChatClientImplementation chatClient = new ChatClientImplementation(chatServerStub, "Joren");
 
+        // register client in skeleton
+        chatClientSkeleton.setClient(chatClient);
 
-        // setup server stub
-        ChatServerStub serverStub = new ChatServerStub(address);
-
-        // create client
-        ChatClient client = new ChatClient(serverStub, name);
+        // register listen address in chat server stub
+        chatServerStub.setReceiveAddress(chatClientSkeleton.getNetworkAddress());
 
         // inject client into UI frame
-        new ChatFrame(client);
+        new ChatFrame(chatClient, chatClientSkeleton);
 
-        // register client with server
-        client.register();
+        // register to server
+        chatClient.register();
 
-        // start listening to incoming messages from other clients
-        ChatClientListener listener = new ChatClientListener(serverStub.getMessageManager().getSocket(), client);
-        listener.run();
+        // TODO: run listener on different thread
+        // start listening for incoming requests
+        chatClientSkeleton.listen();
+
 
     }
 

@@ -1,5 +1,8 @@
 package be.kdg.chat;
 
+import be.kdg.chat.client.ChatClientSkeleton;
+import be.kdg.chat.client.IChatClient;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -14,9 +17,11 @@ public class ChatFrame extends JFrame implements TextReceiver {
     private JButton sendButton;
     private JButton exitButton;
     private IChatClient chatClient;
+    private final ChatClientSkeleton skeleton;
 
-    public ChatFrame(IChatClient chatClient) {
+    public ChatFrame(IChatClient chatClient, ChatClientSkeleton skeleton) {
         this.chatClient = chatClient;
+        this.skeleton = skeleton;
         chatClient.setTextReceiver(this);
         String name = chatClient.getName();
         setTitle("Chat: " + name);
@@ -91,6 +96,7 @@ public class ChatFrame extends JFrame implements TextReceiver {
 
     private void stop() {
         chatClient.unregister();
+        skeleton.stopListening();
     }
 
     public void receive(String text) {
