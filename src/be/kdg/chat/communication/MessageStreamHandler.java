@@ -173,16 +173,13 @@ public class MessageStreamHandler {
         Map<String, String> params = new TreeMap<>();
 
         // loop until EOF (end of file) reached
-        int upcomingToken;
-        do {
+        while (peekToken(tokenizer) != StreamTokenizer.TT_EOF) {
 
             // read next parameter in stream
             KeyValuePair pair = readKeyValuePair(tokenizer);
             params.put(pair.getKey(), pair.getValue());
 
-            // peek to see what the next token is
-            upcomingToken = peekToken(tokenizer);
-        } while (upcomingToken != StreamTokenizer.TT_EOF);
+        }
 
         return params;
     }

@@ -18,6 +18,26 @@ public class ChatServerStub implements IChatServer {
         this.messageManager = new MessageManager();
     }
 
+    // == PRIVATE METHODS ==================
+    private void waitForAck() {
+
+        // infinite loop waiting for ack
+        while (true) {
+
+            // wait sync for ack
+            MethodCallMessage ack = messageManager.receiveSync();
+
+            // check if indeed ack
+            if (ack.getMethod().equals("ack")
+                    && ack.getParameter("result").equals("ok")) {
+                LOGGER.info("Acknowledgement received");
+                return;
+            }
+
+        }
+
+    }
+
     // == INTERFACE METHODS ================
     @Override
     public void register(IChatClient client) {
@@ -31,12 +51,16 @@ public class ChatServerStub implements IChatServer {
         message.addParameter("receive.address", receiveAddress.getAddress());
         message.addParameter("receive.port", String.valueOf(receiveAddress.getPort()));
         messageManager.send(message, this.serverAddress);
+
+        waitForAck();
     }
 
     @Override
     public void unregister(IChatClient client) {
         MethodCallMessage message = new MethodCallMessage(messageManager.getAddress(), "unregister");
         messageManager.send(message, this.serverAddress);
+
+        waitForAck();
     }
 
     @Override
@@ -45,6 +69,8 @@ public class ChatServerStub implements IChatServer {
         methodCall.addParameter("name", name);
         methodCall.addParameter("message", message);
         messageManager.send(methodCall, this.serverAddress);
+
+        waitForAck();
     }
 
     // == SETTER ===========================

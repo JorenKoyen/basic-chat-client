@@ -30,12 +30,15 @@ public class ChatClientSkeleton {
 
         this.isListening = true;
         while (isListening) {
+
+            // wait sync for request
             MethodCallMessage request = messageManager.receiveSync();
+
+            // handle request
             this.handleRequest(request);
         }
     }
 
-    // TODO: use method
     public void stopListening() {
         if (!this.isListening) {
             LOGGER.error("Unable to stop listening, currently listening");
@@ -64,16 +67,36 @@ public class ChatClientSkeleton {
             case "receive":
                 this.handleReceive(request);
                 break;
+            case "getName":
+                this.handleGetName(request);
+                break;
             default:
                 LOGGER.error("Unrecognized request " + request.getMethod() + " received");
 
         }
     }
+    private void ack(NetworkAddress to) {
+        MethodCallMessage ack = new MethodCallMessage(this.messageManager.getAddress(), "ack");
+        ack.addParameter("result", "ok");
+        this.messageManager.send(ack, to);
+    }
 
-    // == DELEGATIONS =======================
+    // == DELEGATIONS =======================waitForAck
     private void handleReceive(MethodCallMessage methodCallMessage) {
         String message = methodCallMessage.getParameter("message");
         this.client.receive(message);
+
+        // request finished -> ack
+        ack(methodCallMessage.getOrigin());
+    }
+    private void handleGetName(MethodCallMessage methodCallMessage) {
+        // get correct name from client
+        String name = this.client.getName();
+
+        // send response to server
+        MethodCallMessage response = new MethodCallMessage(this.messageManager.getAddress(), methodCallMessage.getMethod());
+        response.addParameter("value", name);
+        this.messageManager.send(response, methodCallMessage.getOrigin());
     }
 
 }
